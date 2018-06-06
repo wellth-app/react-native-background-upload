@@ -10,6 +10,8 @@
 }
 @end
 
+extern NSString *const FILE_PREFIX = @"file://";
+
 @implementation VydiaRNFileUploader
 
 RCT_EXPORT_MODULE();
@@ -22,6 +24,51 @@ NSURLSession *_urlSession = nil;
 
 + (BOOL)requiresMainQueueSetup {
     return NO;
+}
+
++ (NSData *)normalizedJSONRequestBody:(id)body {
+    return [NSJSONSerialization dataWithJSONObject:[self normalizeValue:body]
+                                           options:NSJSONWritingPrettyPrinted
+                                             error:nil];
+}
+
++ (NSData *)dataForFile:(NSString *)path {
+    NSURL *fileUri = [NSURL URLWithString:path];
+    return [[NSFileManager defaultManager] contentsAtPath:[fileUri path]];
+}
+
++ (NSString *)base64StringForFile:(NSString *)path {
+    NSURL *fileUri = [NSURL URLWithString:path];
+    NSString *filePath = [fileUri path];
+    NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+    return [fileData base64EncodedStringWithOptions:0];
+}
+
++ (id)normalizeValue:(id)value {
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dictionaryValue = (NSDictionary*)value;
+        NSMutableDictionary *normalizedDictionary = [NSMutableDictionary new];
+        for (NSString *key in [dictionaryValue allKeys]) {
+            normalizedDictionary[key] = [self normalizeValue:dictionaryValue[key]];
+        }
+        
+        return normalizedDictionary;
+    } else if ([value isKindOfClass:[NSArray class]]) {
+        NSArray *arrayValue = (NSArray*)value;
+        NSMutableArray *normalizedArray = [NSMutableArray new];
+        for (id element in arrayValue) {
+            [normalizedArray addObject:[self normalizeValue:element]];
+        }
+        
+        return normalizedArray;
+    } else if ([value isKindOfClass:[NSString class]]) {
+        NSString *stringValue = (NSString*)value;
+        if ([stringValue containsString:FILE_PREFIX]) {
+            return [self base64StringForFile:stringValue];
+        }
+    }
+    
+    return value;
 }
 
 -(id) init {
@@ -199,9 +246,14 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
 
             // I am sorry about warning, but Upload tasks from NSData are not supported in background sessions.
             uploadTask = [[self urlSession] uploadTaskWithRequest:request fromData: nil];
+        } else if ([uploadType isEqualToString:@"json"]) {
+            [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+            NSData *httpBody = [VydiaRNFileUploader normalizedJSONRequestBody:parameters];
+            [request setHTTPBody:httpBody];
+            uploadTask = [_urlSession uploadTaskWithRequest:request fromData:nil];
         } else {
             if (parameters.count > 0) {
-                reject(@"RN Uploader", @"Parameters supported only in multipart type", nil);
+                reject(@"RN Uploader", @"Parameters supported only in 'multipart' and 'json' type", nil);
                 return;
             }
             
@@ -241,11 +293,7 @@ RCT_EXPORT_METHOD(cancelUpload: (NSString *)cancelUploadId resolve:(RCTPromiseRe
 
     NSMutableData *httpBody = [NSMutableData data];
 
-    // resolve path
-    NSURL *fileUri = [NSURL URLWithString: path];
-    NSString *pathWithoutProtocol = [fileUri path];
-
-    NSData *data = [[NSFileManager defaultManager] contentsAtPath:pathWithoutProtocol];
+    NSData *data = [VydiaRNFileUploader dataForFile:path];
     NSString *filename  = [path lastPathComponent];
     NSString *mimetype  = [self guessMIMETypeFromFileName:path];
 
