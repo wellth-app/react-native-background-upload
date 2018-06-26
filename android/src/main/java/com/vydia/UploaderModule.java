@@ -120,8 +120,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         return;
       }
 
-      if (!requestType.equals("raw") && !requestType.equals("multipart")) {
-        promise.reject(new IllegalArgumentException("type should be string: raw or multipart."));
+      if (!requestType.equals("raw") && !requestType.equals("multipart") && !requestType.equals("json")) {
+        promise.reject(new IllegalArgumentException("type should be string: raw, json, or multipart."));
         return;
       }
     }
@@ -179,7 +179,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
       if (requestType.equals("raw")) {
         request = new BinaryUploadRequest(this.getReactApplicationContext(), customUploadId, url)
                 .setFileToUpload(filePath);
-      } else {
+      } else if (requestType.equals("multipart")) {
         if (!options.hasKey("field")) {
           promise.reject(new IllegalArgumentException("field is required field for multipart type."));
           return;
@@ -192,6 +192,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
 
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
                 .addFileToUpload(filePath, options.getString("field"));
+      } else if (requestType.equals("json")) {
+//        request = new
       }
 
 
