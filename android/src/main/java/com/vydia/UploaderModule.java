@@ -193,7 +193,6 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
                 .addFileToUpload(filePath, options.getString("field"));
       } else if (requestType.equals("json")) {
-//        request = new
       }
 
 

@@ -41,8 +41,7 @@ dependencies {
      * There is a PR to fix that
      * https://github.com/facebook/react-native/pull/11835
      * Until that is merged and RN is upgraded, you need to add this line to your android/app/build.gradle, inside 'android' block:
-     * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }
-    */
+     * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }*/
     compile 'com.facebook.react:react-native:+'
-    compile 'net.gotev:uploadservice-okhttp:3.2.3'
+    compile 'net.gotev:uploadservice-okhttp:3.3'
 }
