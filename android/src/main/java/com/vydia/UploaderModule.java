@@ -16,6 +16,8 @@ import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.vydia.JSONUploadRequest;
+import com.vydia.MapUtil;
 
 import net.gotev.uploadservice.BinaryUploadRequest;
 import net.gotev.uploadservice.HttpUploadRequest;
@@ -28,6 +30,8 @@ import net.gotev.uploadservice.UploadStatusDelegate;
 import net.gotev.uploadservice.okhttp.OkHttpStack;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Created by stephen on 12/8/16.
@@ -175,6 +179,12 @@ public class UploaderModule extends ReactContextBaseJavaModule {
       };
 
       HttpUploadRequest<?> request;
+      ReadableMap parameters;
+      if (options.hasKey("parameters")) {
+        parameters = options.getMap("parameters");
+      } else {
+        parameters = (ReadableMap)Collections.emptyMap();
+      }
 
       if (requestType.equals("raw")) {
         request = new BinaryUploadRequest(this.getReactApplicationContext(), customUploadId, url)
@@ -192,7 +202,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
 
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
                 .addFileToUpload(filePath, options.getString("field"));
-      } else if (requestType.equals("json")) {
+      } else {
+        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url)
       }
 
 
@@ -206,22 +217,16 @@ public class UploaderModule extends ReactContextBaseJavaModule {
 
       if (options.hasKey("parameters")) {
         if (requestType.equals("raw")) {
-          promise.reject(new IllegalArgumentException("Parameters supported only in multipart type"));
+          promise.reject(new IllegalArgumentException("Parameters supported only in multipart and json type"));
           return;
         }
 
-        ReadableMap parameters = options.getMap("parameters");
+        Map<String, String> sanitizedParameters = MapUtil.toUploadMap(parameters);
         ReadableMapKeySetIterator keys = parameters.keySetIterator();
 
         while (keys.hasNextKey()) {
           String key = keys.nextKey();
-
-          if (parameters.getType(key) != ReadableType.String) {
-            promise.reject(new IllegalArgumentException("Parameters must be string key/values. Value was invalid for '" + key + "'"));
-            return;
-          }
-
-          request.addParameter(key, parameters.getString(key));
+          request.addParameter(key, sanitizedParameters.get(key));
         }
       }
 
