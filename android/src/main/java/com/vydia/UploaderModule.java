@@ -154,7 +154,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         }
 
         @Override
-        public void onError(Context context, UploadInfo uploadInfo, Exception exception) {
+        public void onError(Context context, UploadInfo uploadInfo, ServerResponse serverResponse, Exception exception) {
           WritableMap params = Arguments.createMap();
           params.putString("id", customUploadId != null ? customUploadId : uploadInfo.getUploadId());
           params.putString("error", exception.getMessage());
@@ -179,12 +179,6 @@ public class UploaderModule extends ReactContextBaseJavaModule {
       };
 
       HttpUploadRequest<?> request;
-      ReadableMap parameters;
-      if (options.hasKey("parameters")) {
-        parameters = options.getMap("parameters");
-      } else {
-        parameters = (ReadableMap)Collections.emptyMap();
-      }
 
       if (requestType.equals("raw")) {
         request = new BinaryUploadRequest(this.getReactApplicationContext(), customUploadId, url)
@@ -203,7 +197,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
                 .addFileToUpload(filePath, options.getString("field"));
       } else {
-        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url)
+        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url);
       }
 
 
@@ -221,6 +215,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
           return;
         }
 
+        ReadableMap parameters = options.getMap("parameters");
         Map<String, String> sanitizedParameters = MapUtil.toUploadMap(parameters);
         ReadableMapKeySetIterator keys = parameters.keySetIterator();
 
