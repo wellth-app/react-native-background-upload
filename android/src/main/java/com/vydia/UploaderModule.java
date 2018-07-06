@@ -51,15 +51,18 @@ public class UploaderModule extends ReactContextBaseJavaModule {
   }
 
   /*
-  Sends an event to the JS module.
+   * Sends an event to the JS module.
    */
   private void sendEvent(String eventName, @Nullable WritableMap params) {
-    this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("RNFileUploader-" + eventName, params);
+    this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit("RNFileUploader-" + eventName, params);
   }
 
   /*
-  Gets file information for the path specified.  Example valid path is: /storage/extSdCard/DCIM/Camera/20161116_074726.mp4
-  Returns an object such as: {extension: "mp4", size: "3804316", exists: true, mimeType: "video/mp4", name: "20161116_074726.mp4"}
+   * Gets file information for the path specified. Example valid path is:
+   * /storage/extSdCard/DCIM/Camera/20161116_074726.mp4 Returns an object such as:
+   * {extension: "mp4", size: "3804316", exists: true, mimeType: "video/mp4",
+   * name: "20161116_074726.mp4"}
    */
   @ReactMethod
   public void getFileInfo(String path, final Promise promise) {
@@ -67,16 +70,16 @@ public class UploaderModule extends ReactContextBaseJavaModule {
       WritableMap params = Arguments.createMap();
       File fileInfo = new File(path);
       params.putString("name", fileInfo.getName());
-      if (!fileInfo.exists() || !fileInfo.isFile())
-      {
+      if (!fileInfo.exists() || !fileInfo.isFile()) {
         params.putBoolean("exists", false);
-      }
-      else
-      {
+      } else {
         params.putBoolean("exists", true);
-        params.putString("size",Long.toString(fileInfo.length())); //use string form of long because there is no putLong and converting to int results in a max size of 17.2 gb, which could happen.  Javascript will need to convert it to a number
+        params.putString("size", Long.toString(fileInfo.length())); // use string form of long because there is no
+                                                                    // putLong and converting to int results in a max
+                                                                    // size of 17.2 gb, which could happen. Javascript
+                                                                    // will need to convert it to a number
         String extension = MimeTypeMap.getFileExtensionFromUrl(path);
-        params.putString("extension",extension);
+        params.putString("extension", extension);
         String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
         params.putString("mimeType", mimeType);
       }
@@ -89,12 +92,11 @@ public class UploaderModule extends ReactContextBaseJavaModule {
   }
 
   /*
-   * Starts a file upload.
-   * Returns a promise with the string ID of the upload.
+   * Starts a file upload. Returns a promise with the string ID of the upload.
    */
   @ReactMethod
   public void startUpload(ReadableMap options, final Promise promise) {
-    for (String key : new String[]{"url", "path"}) {
+    for (String key : new String[] { "url", "path" }) {
       if (!options.hasKey(key)) {
         promise.reject(new IllegalArgumentException("Missing '" + key + "' field."));
         return;
@@ -139,9 +141,13 @@ public class UploaderModule extends ReactContextBaseJavaModule {
 
     String url = options.getString("url");
     String filePath = options.getString("path");
-    String method = options.hasKey("method") && options.getType("method") == ReadableType.String ? options.getString("method") : "POST";
+    String method = options.hasKey("method") && options.getType("method") == ReadableType.String
+        ? options.getString("method")
+        : "POST";
 
-    final String customUploadId = options.hasKey("customUploadId") && options.getType("method") == ReadableType.String ? options.getString("customUploadId") : null;
+    final String customUploadId = options.hasKey("customUploadId") && options.getType("method") == ReadableType.String
+        ? options.getString("customUploadId")
+        : null;
 
     try {
       UploadStatusDelegate statusDelegate = new UploadStatusDelegate() {
@@ -149,7 +155,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         public void onProgress(Context context, UploadInfo uploadInfo) {
           WritableMap params = Arguments.createMap();
           params.putString("id", customUploadId != null ? customUploadId : uploadInfo.getUploadId());
-          params.putInt("progress", uploadInfo.getProgressPercent()); //0-100
+          params.putInt("progress", uploadInfo.getProgressPercent()); // 0-100
           sendEvent("progress", params);
         }
 
@@ -183,12 +189,12 @@ public class UploaderModule extends ReactContextBaseJavaModule {
       if (options.hasKey("parameters")) {
         parameters = options.getMap("parameters");
       } else {
-        parameters = (ReadableMap)Collections.emptyMap();
+        parameters = (ReadableMap) Collections.emptyMap();
       }
 
       if (requestType.equals("raw")) {
         request = new BinaryUploadRequest(this.getReactApplicationContext(), customUploadId, url)
-                .setFileToUpload(filePath);
+            .setFileToUpload(filePath);
       } else if (requestType.equals("multipart")) {
         if (!options.hasKey("field")) {
           promise.reject(new IllegalArgumentException("field is required field for multipart type."));
@@ -201,15 +207,12 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         }
 
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
-                .addFileToUpload(filePath, options.getString("field"));
+            .addFileToUpload(filePath, options.getString("field"));
       } else {
-        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url)
+        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url);
       }
 
-
-      request.setMethod(method)
-        .setMaxRetries(2)
-        .setDelegate(statusDelegate);
+      request.setMethod(method).setMaxRetries(2).setDelegate(statusDelegate);
 
       if (notification.getBoolean("enabled")) {
         request.setNotificationConfig(new UploadNotificationConfig());
@@ -236,7 +239,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         while (keys.hasNextKey()) {
           String key = keys.nextKey();
           if (headers.getType(key) != ReadableType.String) {
-            promise.reject(new IllegalArgumentException("Headers must be string key/values.  Value was invalid for '" + key + "'"));
+            promise.reject(new IllegalArgumentException(
+                "Headers must be string key/values.  Value was invalid for '" + key + "'"));
             return;
           }
           request.addHeader(key, headers.getString(key));
@@ -252,9 +256,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
   }
 
   /*
-   * Cancels file upload
-   * Accepts upload ID as a first argument, this upload will be cancelled
-   * Event "cancelled" will be fired when upload is cancelled.
+   * Cancels file upload Accepts upload ID as a first argument, this upload will
+   * be cancelled Event "cancelled" will be fired when upload is cancelled.
    */
   @ReactMethod
   public void cancelUpload(String cancelUploadId, final Promise promise) {
