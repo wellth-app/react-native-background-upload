@@ -67,6 +67,8 @@ NSURLSession *_urlSession = nil;
     } else if ([value isKindOfClass:[NSString class]]) {
         NSString *stringValue = (NSString*)value;
         if ([stringValue containsString:FILE_PREFIX]) {
+            NSLog(@"BASE64 STRINGS = %@ %@", [self base64StringForFile:stringValue], stringValue);
+
             return [self base64StringForFile:stringValue];
         }
     }
