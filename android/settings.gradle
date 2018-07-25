@@ -1,1 +1,3 @@
-include ':uploadservice-okhttp', ':uploadservice-ftp', ':uploadservice'
+include ':uploadservice-okhttp'
+include ':uploadservice-ftp'
+include ':uploadservice'
