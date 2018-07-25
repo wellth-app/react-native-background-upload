@@ -1,17 +1,19 @@
 buildscript {
     repositories {
         jcenter()
+        maven { url 'https://jitpack.io' }
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.0'
+        classpath 'com.android.tools.build:gradle:3.1.3'
     }
 }
 
 apply plugin: 'com.android.library'
 
-def DEFAULT_COMPILE_SDK_VERSION = 25
-def DEFAULT_BUILD_TOOLS_VERSION = "25.0.2"
-def DEFAULT_TARGET_SDK_VERSION = 25
+def DEFAULT_COMPILE_SDK_VERSION = 27
+def DEFAULT_BUILD_TOOLS_VERSION = "27.0.3"
+def DEFAULT_TARGET_SDK_VERSION = 27
 
 android {
     compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
@@ -25,7 +27,7 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
-    }    
+    }
     lintOptions {
         abortOnError false
     }
@@ -33,6 +35,8 @@ android {
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
+    google()
 }
 dependencies {
     /**
@@ -41,8 +45,9 @@ dependencies {
      * There is a PR to fix that
      * https://github.com/facebook/react-native/pull/11835
      * Until that is merged and RN is upgraded, you need to add this line to your android/app/build.gradle, inside 'android' block:
-     * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }*/
+     * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }
+     */
     compile 'com.facebook.react:react-native:+'
-    compile 'net.gotev:uploadservice-okhttp:3.3'
+    compile 'com.github.wellth-app:android-upload-service:3.4.3-0'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
 }
