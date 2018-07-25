@@ -1,9 +1,16 @@
 buildscript {
     repositories {
         jcenter()
+        google()
+        maven {
+            url 'https://maven.google.com/'
+            name 'Google'
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7'
     }
 }
 
@@ -33,6 +40,11 @@ android {
 
 repositories {
     mavenCentral()
+    google()
+    maven {
+        url 'https://maven.google.com/'
+        name 'Google'
+    }
 }
 dependencies {
     /**
@@ -45,4 +57,5 @@ dependencies {
     compile 'com.facebook.react:react-native:+'
     compile 'net.gotev:uploadservice-okhttp:3.3'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
+
 }
