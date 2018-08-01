@@ -48,6 +48,6 @@ dependencies {
      * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }
      */
     compile 'com.facebook.react:react-native:+'
-    compile 'com.github.wellth-app.android-upload-service:uploadservice-okhttp:3.4.3-0'
+    compile 'com.github.wellth-app.android-upload-service:uploadservice-okhttp:3.4.3-1'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
 }
