@@ -96,7 +96,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
    */
   @ReactMethod
   public void startUpload(ReadableMap options, final Promise promise) {
-    for (String key : new String[] { "url", "path" }) {
+    for (String key : new String[] { "url" }) {
       if (!options.hasKey(key)) {
         promise.reject(new IllegalArgumentException("Missing '" + key + "' field."));
         return;
@@ -140,7 +140,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
     }
 
     String url = options.getString("url");
-    String filePath = options.getString("path");
+    String filePath = options.hasKey("path") ? options.getString("path") : null;
     String method = options.hasKey("method") && options.getType("method") == ReadableType.String
         ? options.getString("method")
         : "POST";
