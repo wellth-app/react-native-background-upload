@@ -50,14 +50,7 @@ public class MapUtil {
                     jsonObject.put(key, readableMap.getDouble(key));
                     break;
                 case String:
-                    final String value = readableMap.getString(key);
-                    if (value.contains("file://")) {
-                        final String filePath = value.substring("file://".length());
-                        final File file = new File(filePath);
-                        jsonObject.put(key, EncodingUtils.encodeFileToBase64Binary(file));
-                    } else {
-                        jsonObject.put(key, readableMap.getString(key));
-                    }
+                    jsonObject.put(key, readableMap.getString(key));
                     break;
                 case Map:
                     jsonObject.put(key, MapUtil.toJSONObject(readableMap.getMap(key)));
