@@ -1,4 +1,4 @@
-package com.vydia.RNUploader;
+package com.vydia;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -16,11 +16,10 @@ import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import com.vydia.JSONUploadRequest;
-import com.vydia.MapUtil;
 
 import net.gotev.uploadservice.BinaryUploadRequest;
 import net.gotev.uploadservice.HttpUploadRequest;
+import net.gotev.uploadservice.JSONUploadRequest;
 import net.gotev.uploadservice.MultipartUploadRequest;
 import net.gotev.uploadservice.ServerResponse;
 import net.gotev.uploadservice.UploadInfo;
@@ -30,7 +29,6 @@ import net.gotev.uploadservice.UploadStatusDelegate;
 import net.gotev.uploadservice.okhttp.OkHttpStack;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.Map;
 
 /**
