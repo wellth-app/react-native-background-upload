@@ -1,6 +1,7 @@
 package com.vydia;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -30,16 +31,19 @@ import net.gotev.uploadservice.okhttp.OkHttpStack;
 
 import java.io.File;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by stephen on 12/8/16.
  */
 public class UploaderModule extends ReactContextBaseJavaModule {
+
   private static final String TAG = "UploaderBridge";
 
-  public UploaderModule(ReactApplicationContext reactContext) {
-    super(reactContext);
-    UploadService.NAMESPACE = reactContext.getApplicationInfo().packageName;
+  public UploaderModule(ReactApplicationContext context){
+    super(context);
+    context.registerReceiver(new UploaderEventReceiver(context), new IntentFilter("com.wellthapp.reactnative.uploadservice.broadcast.status"));
+    UploadService.NAMESPACE = context.getApplicationInfo().packageName;
     UploadService.HTTP_STACK = new OkHttpStack();
   }
 
@@ -201,7 +205,8 @@ public class UploaderModule extends ReactContextBaseJavaModule {
         request = new MultipartUploadRequest(this.getReactApplicationContext(), customUploadId, url)
             .addFileToUpload(filePath, options.getString("field"));
       } else {
-        request = new JSONUploadRequest(this.getReactApplicationContext(), customUploadId, url);
+        final String jsonUploadID = (customUploadId != null ? customUploadId : UUID.randomUUID().toString());
+        request = new JSONUploadRequest(this.getReactApplicationContext(), jsonUploadID, url);
       }
 
       request.setMethod(method).setMaxRetries(2).setDelegate(statusDelegate);
@@ -254,7 +259,7 @@ public class UploaderModule extends ReactContextBaseJavaModule {
    */
   @ReactMethod
   public void cancelUpload(String cancelUploadId, final Promise promise) {
-    if (!(cancelUploadId instanceof String)) {
+    if (cancelUploadId == null) {
       promise.reject(new IllegalArgumentException("Upload ID must be a string"));
       return;
     }
