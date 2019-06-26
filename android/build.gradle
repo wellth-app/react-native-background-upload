@@ -49,5 +49,6 @@ dependencies {
      */
     compile 'com.facebook.react:react-native:+'
     compile 'com.github.wellth-app.android-upload-service:uploadservice-okhttp:3.4.6-0'
+    implementation 'androidx.annotation:annotation:1.0.0'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
 }
