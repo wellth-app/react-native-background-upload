@@ -18,6 +18,7 @@ import net.gotev.uploadservice.observer.request.GlobalRequestObserver
 import net.gotev.uploadservice.okhttp.OkHttpStack
 import net.gotev.uploadservice.protocols.binary.BinaryUploadRequest
 import net.gotev.uploadservice.protocols.multipart.MultipartUploadRequest
+import net.gotev.uploadservice.protocols.json.JSONUploadRequest
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -189,7 +190,7 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
       val request = if (requestType == "raw") {
         BinaryUploadRequest(this.reactApplicationContext, url!!)
                 .setFileToUpload(filePath!!)
-      } else {
+      } else if (requestType == "multipart") {
         if (!options.hasKey("field")) {
           promise.reject(java.lang.IllegalArgumentException("field is required field for multipart type."))
           return
@@ -200,6 +201,8 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
         }
         MultipartUploadRequest(this.reactApplicationContext, url!!)
                 .addFileToUpload(filePath!!, options.getString("field")!!)
+      } else {
+        JSONUploadRequest(this.reactApplicationContext, url!!)
       }
       request.setMethod(method!!)
               .setMaxRetries(maxRetries)
@@ -231,7 +234,7 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
       }
       if (options.hasKey("parameters")) {
         if (requestType == "raw") {
-          promise.reject(java.lang.IllegalArgumentException("Parameters supported only in multipart type"))
+          promise.reject(java.lang.IllegalArgumentException("Parameters supported only in multipart or JSON type"))
           return
         }
         val parameters = options.getMap("parameters")
