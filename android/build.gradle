@@ -1,27 +1,42 @@
 buildscript {
+    ext {
+        kotlinVersion = '1.4.0'
+        buildToolsVersion = '29.0.2'
+        compileSdkVersion = 29
+        targetSdkVersion = 29
+        minSdkVersion = 18
+    }
+    ext.detoxKotlinVersion = ext.kotlinVersion
+
     repositories {
         jcenter()
-        maven { url 'https://jitpack.io' }
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.3'
+        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 def DEFAULT_COMPILE_SDK_VERSION = 28
 def DEFAULT_BUILD_TOOLS_VERSION = "28.0.3"
 def DEFAULT_TARGET_SDK_VERSION = 28
 
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
 android {
-    compileSdkVersion project.hasProperty('compileSdkVersion') ? project.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
-    buildToolsVersion project.hasProperty('buildToolsVersion') ? project.buildToolsVersion : DEFAULT_BUILD_TOOLS_VERSION
+    compileSdkVersion safeExtGet('compileSdkVersion', DEFAULT_COMPILE_SDK_VERSION)
+    buildToolsVersion safeExtGet('buildToolsVersion', DEFAULT_BUILD_TOOLS_VERSION)
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion project.hasProperty('targetSdkVersion') ? project.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
+        minSdkVersion 21
+        targetSdkVersion safeExtGet('targetSdkVersion', DEFAULT_TARGET_SDK_VERSION)
         versionCode 1
         versionName "1.0"
         ndk {
@@ -38,17 +53,20 @@ repositories {
     maven { url 'https://jitpack.io' }
     google()
 }
+
+def _ext = ext
+
+def _kotlinVersion = _ext.has('detoxKotlinVersion') ? _ext.detoxKotlinVersion : '1.3.10'
+def _kotlinStdlib = _ext.has('detoxKotlinStdlib') ? _ext.detoxKotlinStdlib : 'kotlin-stdlib-jdk8'
+
 dependencies {
-    /**
-     * Using okhttp is better because it fixes a possible outofmemory exception.
-     * However the okhttp library can have a funky version resolution and cause compilation errors with RN
-     * There is a PR to fix that
-     * https://github.com/facebook/react-native/pull/11835
-     * Until that is merged and RN is upgraded, you need to add this line to your android/app/build.gradle, inside 'android' block:
-     * configurations.all { resolutionStrategy.force 'com.squareup.okhttp3:okhttp:3.4.1' }
-     */
-    compile 'com.facebook.react:react-native:+'
-    compile 'com.github.wellth-app.android-upload-service:uploadservice-okhttp:3.4.6-0'
-    implementation 'androidx.annotation:annotation:1.0.0'
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
+    implementation "androidx.core:core-ktx:1.0.1"
+
+    implementation 'com.facebook.react:react-native:+'
+
+    implementation "org.jetbrains.kotlin:$_kotlinStdlib:$_kotlinVersion"
+
+    implementation 'net.gotev:uploadservice-okhttp:4.3.0'
+
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
 }

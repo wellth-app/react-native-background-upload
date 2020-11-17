@@ -1,27 +1,18 @@
-#
-# Be sure to run `pod lib lint react-native-background-upload.podspec' to ensure this is a
-# valid spec before submitting.
-#
-# Any lines starting with a # are optional, but their use is encouraged
-# To learn more about a Podspec see https://guides.cocoapods.org/syntax/podspec.html
-#
+require "json"
 
-Pod::Spec.new do |s|
-  s.name             = 'react-native-background-upload'
-  s.version          = '4.5.0'
-  s.summary          = 'Cross platform http post file uploader with android and iOS background support'
+ json = File.read(File.join(__dir__, "package.json"))
+ package = JSON.parse(json).deep_symbolize_keys
 
-  s.homepage         = 'https://github.com/wellth-app/react-native-background-upload'
-  s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = 'Steve Potter'
-  s.source           = { :git => 'https://github.com/wellth-app/react-native-background-upload.git', :tag => s.version.to_s }
+ Pod::Spec.new do |s|
+   s.name = package[:name]
+   s.version = package[:version]
+   s.license = { type: "MIT" }
+   s.homepage = "https://github.com/Vydia/react-native-background-upload"
+   s.authors = package[:author]
+   s.summary = package[:description]
+   s.source = { git: package[:repository][:url] }
+   s.source_files = "ios/*.{h,m}"
+   s.platform = :ios, "9.0"
 
-  s.ios.deployment_target = '8.0'
-
-  s.source_files = 'react-native-background-upload/Classes/**/*'
-  
-  s.source_files = 'ios/**/*.{h,m}'
-  s.requires_arc = true
-
-  s.dependency 'React'
-end
+   s.dependency "React"
+ end

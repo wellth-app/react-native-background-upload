@@ -2,9 +2,9 @@
 /**
  * Handles HTTP background file uploads from an iOS or Android device.
  */
-import { NativeModules, DeviceEventEmitter } from "react-native";
+import { NativeModules, DeviceEventEmitter } from 'react-native';
 
-export type UploadEvent = "progress" | "error" | "completed" | "cancelled";
+export type UploadEvent = 'progress' | 'error' | 'completed' | 'cancelled';
 
 export type NotificationArgs = {
   enabled: boolean,
@@ -12,8 +12,8 @@ export type NotificationArgs = {
 
 export type StartUploadArgs = {
   url: string,
-  // Required for raw and multipart
-  path?: string,
+  path: string,
+  method?: 'PUT' | 'POST',
   // Optional, because raw is default
   type?: "raw" | "multipart" | "json",
   // This option is needed for multipart type
@@ -27,14 +27,14 @@ export type StartUploadArgs = {
 
 const NativeModule =
   NativeModules.VydiaRNFileUploader || NativeModules.RNFileUploader; // iOS is VydiaRNFileUploader and Android is NativeModules
-const eventPrefix = "RNFileUploader-";
+const eventPrefix = 'RNFileUploader-';
 
 // for IOS, register event listeners or else they don't fire on DeviceEventEmitter
 if (NativeModules.VydiaRNFileUploader) {
-  NativeModule.addListener(eventPrefix + "progress");
-  NativeModule.addListener(eventPrefix + "error");
-  NativeModule.addListener(eventPrefix + "cancelled");
-  NativeModule.addListener(eventPrefix + "completed");
+  NativeModule.addListener(eventPrefix + 'progress');
+  NativeModule.addListener(eventPrefix + 'error');
+  NativeModule.addListener(eventPrefix + 'cancelled');
+  NativeModule.addListener(eventPrefix + 'completed');
 }
 
 /*
@@ -60,7 +60,7 @@ export const getFileInfo = (path: string): Promise<Object> => {
 };
 
 /*
-Starts uploading a file to an HTTP endpoint.  
+Starts uploading a file to an HTTP endpoint.
 Options object:
 {
   url: string.  url to post to.
@@ -99,7 +99,7 @@ export const cancelUpload = (cancelUploadId: string): Promise<boolean> => {
 };
 
 /*
-Listens for the given event on the given upload ID (resolved from startUpload).  
+Listens for the given event on the given upload ID (resolved from startUpload).
 If you don't supply a value for uploadId, the event will fire for all uploads.
 Events (id is always the upload ID):
   progress - { id: string, progress: int (0-100) }
@@ -110,7 +110,7 @@ Events (id is always the upload ID):
 export const addListener = (
   eventType: UploadEvent,
   uploadId: string,
-  listener: Function
+  listener: Function,
 ) => {
   return DeviceEventEmitter.addListener(eventPrefix + eventType, data => {
     if (!uploadId || !data || !data.id || data.id === uploadId) {
