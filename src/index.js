@@ -15,7 +15,7 @@ export type StartUploadArgs = {
   path: string,
   method?: 'PUT' | 'POST',
   // Optional, because raw is default
-  type?: "raw" | "multipart" | "json",
+  type?: 'raw' | 'multipart' | 'json',
   // This option is needed for multipart type
   field?: string,
   customUploadId?: string,
@@ -92,8 +92,8 @@ Will reject if there was an internal error or ID format is invalid.
 
 */
 export const cancelUpload = (cancelUploadId: string): Promise<boolean> => {
-  if (typeof cancelUploadId !== "string") {
-    return Promise.reject(new Error("Upload ID must be a string"));
+  if (typeof cancelUploadId !== 'string') {
+    return Promise.reject(new Error('Upload ID must be a string'));
   }
   return NativeModule.cancelUpload(cancelUploadId);
 };
