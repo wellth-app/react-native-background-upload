@@ -145,6 +145,38 @@ RCT_EXPORT_METHOD(getFileInfo:(NSString *)path resolve:(RCTPromiseResolveBlock)r
     return (__bridge NSString *)(MIMEType);
 }
 
+- (NSArray*)normalizePartsFromAssetLibrary:(NSArray*)parts reject:(RCTPromiseRejectBlock)reject {
+    NSMutableArray *returnValue = [NSMutableArray new];
+    
+    // TODO: This is next level inefficient. It copies the old dictionary into the new dictionary and appends it to a new array.
+    [parts enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSDictionary *part = obj;
+        NSMutableDictionary *newPart = [NSMutableDictionary dictionaryWithDictionary:part];
+        __block NSString *fileURI = [part objectForKey:@"path"];
+        
+        if ([fileURI hasPrefix:@"assets-library"]) {
+            dispatch_group_t group = dispatch_group_create();
+            dispatch_group_enter(group);
+            [self copyAssetToFile:fileURI completionHandler:^(NSString * _Nullable tempFileUrl, NSError * _Nullable error) {
+                if (error) {
+                    dispatch_group_leave(group);
+                    reject(@"RN Uploader", @"Asset could not be copied to temp file.", nil);
+                    return;
+                }
+                fileURI = tempFileUrl;
+                dispatch_group_leave(group);
+            }];
+            dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+            
+            [newPart setValue:fileURI forKey:@"path"];
+        }
+
+        [returnValue addObject:newPart];
+    }];
+    
+    return returnValue;
+}
+
 /*
  Utility method to copy a PHAsset file into a local temp file, which can then be uploaded.
  */
@@ -195,14 +227,13 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     }
     
     NSString *uploadUrl = options[@"url"];
-    __block NSString *fileURI = options[@"path"];
     NSString *method = options[@"method"] ?: @"POST";
     NSString *uploadType = options[@"type"] ?: @"raw";
-    NSString *fieldName = options[@"field"];
     NSString *customUploadId = options[@"customUploadId"];
     NSString *appGroup = options[@"appGroup"];
     NSDictionary *headers = options[@"headers"];
     NSDictionary *parameters = options[@"parameters"];
+    __block NSArray *uploadParts = options[@"parts"];
     
     @try {
         NSURL *requestUrl = [NSURL URLWithString: uploadUrl];
@@ -222,30 +253,16 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
             }
         }];
         
-        
-        // asset library files have to be copied over to a temp file.  they can't be uploaded directly
-        if ([fileURI hasPrefix:@"assets-library"]) {
-            dispatch_group_t group = dispatch_group_create();
-            dispatch_group_enter(group);
-            [self copyAssetToFile:fileURI completionHandler:^(NSString * _Nullable tempFileUrl, NSError * _Nullable error) {
-                if (error) {
-                    dispatch_group_leave(group);
-                    reject(@"RN Uploader", @"Asset could not be copied to temp file.", nil);
-                    return;
-                }
-                fileURI = tempFileUrl;
-                dispatch_group_leave(group);
-            }];
-            dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-        }
-        
         NSURLSessionDataTask *uploadTask;
         
         if ([uploadType isEqualToString:@"multipart"]) {
+            NSArray *normalizedParts = [self normalizePartsFromAssetLibrary:uploadParts reject:reject];
+            
             NSString *uuidStr = [[NSUUID UUID] UUIDString];
             [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", uuidStr] forHTTPHeaderField:@"Content-Type"];
             
-            NSData *httpBody = [self createBodyWithBoundary:uuidStr path:fileURI parameters: parameters fieldName:fieldName];
+            // TODO: Modify this to take an array of parts
+            NSData *httpBody = [self createBodyWithBoundary:uuidStr parameters:parameters parts:normalizedParts];
             [request setHTTPBody: httpBody];
             
             uploadTask = [[self urlSession:appGroup] uploadTaskWithStreamedRequest:request];
@@ -256,11 +273,23 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
             
             uploadTask = [[self urlSession:appGroup] uploadTaskWithStreamedRequest:request];
         } else {
+            NSUInteger numberOfParts = uploadParts.count;
+            if (numberOfParts == 0) {
+                reject(@"RN Uploader", @"At least one part must be supplied to a 'raw' request type", nil);
+            }
+            
+            if (numberOfParts > 1) {
+                reject(@"RN Uploader", @"Multiple parts only supported in 'multipart' request type", nil);
+            }
+            
             if (parameters.count > 0) {
                 reject(@"RN Uploader", @"Parameters supported only in 'multipart' and 'json' type", nil);
                 return;
             }
-
+            
+            NSArray *normalizedParts = [self normalizePartsFromAssetLibrary:uploadParts reject:reject];
+            NSDictionary *rawUploadPart = [normalizedParts firstObject];
+            NSString *fileURI = [rawUploadPart valueForKey:@"path"];
             uploadTask = [[self urlSession: appGroup] uploadTaskWithRequest:request fromFile:[NSURL URLWithString: fileURI]];
         }
         
@@ -292,28 +321,35 @@ RCT_EXPORT_METHOD(cancelUpload:(NSString *)cancelUploadId resolve:(RCTPromiseRes
 }
 
 - (NSData *)createBodyWithBoundary:(NSString *)boundary
-                              path:(NSString *)path
                         parameters:(NSDictionary *)parameters
-                         fieldName:(NSString *)fieldName {
-    
+                             parts:(NSArray *)parts {
     NSMutableData *httpBody = [NSMutableData data];
     
-    NSData *data = [VydiaRNFileUploader dataForFile:path];
-    NSString *filename  = [path lastPathComponent];
-    NSString *mimetype  = [self guessMIMETypeFromFileName:path];
-    
+    // Put each parameter in it's own part, delimited by the boundary
     [parameters enumerateKeysAndObjectsUsingBlock:^(NSString *parameterKey, NSString *parameterValue, BOOL *stop) {
         [httpBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [httpBody appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", parameterKey] dataUsingEncoding:NSUTF8StringEncoding]];
         [httpBody appendData:[[NSString stringWithFormat:@"%@\r\n", parameterValue] dataUsingEncoding:NSUTF8StringEncoding]];
     }];
     
-    [httpBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    [httpBody appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fieldName, filename] dataUsingEncoding:NSUTF8StringEncoding]];
-    [httpBody appendData:[[NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", mimetype] dataUsingEncoding:NSUTF8StringEncoding]];
-    [httpBody appendData:data];
-    [httpBody appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    
+    // Put each part in it's own part, delimited by the boundary
+    [parts enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSDictionary *part = obj;
+        NSString *path = [part objectForKey:@"path"];
+        NSString *fieldName = [part objectForKey:@"field"];
+        
+        NSData *data = [VydiaRNFileUploader dataForFile:path];
+        NSString *filename  = [path lastPathComponent];
+        NSString *mimetype  = [self guessMIMETypeFromFileName:path];
+        
+        [httpBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [httpBody appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"; filename=\"%@\"\r\n", fieldName, filename] dataUsingEncoding:NSUTF8StringEncoding]];
+        [httpBody appendData:[[NSString stringWithFormat:@"Content-Type: %@\r\n\r\n", mimetype] dataUsingEncoding:NSUTF8StringEncoding]];
+        [httpBody appendData:data];
+        [httpBody appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    }];
+
+    // Write a boundary to conclude the request body
     [httpBody appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     
     return httpBody;
