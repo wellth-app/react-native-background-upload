@@ -127,7 +127,7 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
    */
   @ReactMethod
   fun startUpload(options: ReadableMap, promise: Promise) {
-    for (key in arrayOf("url", "path")) {
+    for (key in arrayOf("url")) {
       if (!options.hasKey(key)) {
         promise.reject(java.lang.IllegalArgumentException("Missing '$key' field."))
         return
@@ -153,8 +153,8 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
         promise.reject(java.lang.IllegalArgumentException("type must be string."))
         return
       }
-      if (requestType != "raw" && requestType != "multipart") {
-        promise.reject(java.lang.IllegalArgumentException("type should be string: raw or multipart."))
+      if (requestType != "raw" && requestType != "multipart" && requestType != "json") {
+        promise.reject(java.lang.IllegalArgumentException("type should be string: raw, multipart, or json."))
         return
       }
     }
@@ -182,7 +182,7 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
     }
 
     val url = options.getString("url")
-    val filePath = options.getString("path")
+    val filePath = if (options.hasKey("path")) options.getString("path") else null
     val method = if (options.hasKey("method") && options.getType("method") == ReadableType.String) options.getString("method") else "POST"
     val maxRetries = if (options.hasKey("maxRetries") && options.getType("maxRetries") == ReadableType.Number) options.getInt("maxRetries") else 2
     val customUploadId = if (options.hasKey("customUploadId") && options.getType("method") == ReadableType.String) options.getString("customUploadId") else null
