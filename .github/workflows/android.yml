@@ -19,6 +19,7 @@ jobs:
     - name: Use specific Java version for sdkmanager to work
       uses: joschi/setup-jdk@v1
       with:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
         java-version: 'openjdk8'
         architecture: 'x64'
 
