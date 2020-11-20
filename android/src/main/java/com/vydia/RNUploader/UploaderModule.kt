@@ -182,28 +182,38 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
     }
 
     val url = options.getString("url")
+    val parts = options.getArray("parts")
+
     val filePath = if (options.hasKey("path")) options.getString("path") else null
     val method = if (options.hasKey("method") && options.getType("method") == ReadableType.String) options.getString("method") else "POST"
     val maxRetries = if (options.hasKey("maxRetries") && options.getType("maxRetries") == ReadableType.Number) options.getInt("maxRetries") else 2
     val customUploadId = if (options.hasKey("customUploadId") && options.getType("method") == ReadableType.String) options.getString("customUploadId") else null
     try {
       val request = if (requestType == "raw") {
-        BinaryUploadRequest(this.reactApplicationContext, url!!)
-                .setFileToUpload(filePath!!)
+        if (parts != null && parts.size() > 1) {
+          promise.reject(java.lang.IllegalArgumentException("For a binary upload, parts can only have a max size of 1!"))
+        }
+        val bRequest = BinaryUploadRequest(this.reactApplicationContext, url!!)
+        val binaryUploadPart = parts?.getMap(0)
+        bRequest.setFileToUpload(binaryUploadPart?.getString("path")!!)
+        bRequest
       } else if (requestType == "multipart") {
-        if (!options.hasKey("field")) {
-          promise.reject(java.lang.IllegalArgumentException("field is required field for multipart type."))
-          return
+        if (parts != null && parts.size() < 1) {
+          promise.reject(java.lang.IllegalArgumentException("For a multipart upload, parts must have size of at least 1!"))
         }
-        if (options.getType("field") != ReadableType.String) {
-          promise.reject(java.lang.IllegalArgumentException("field must be string."))
-          return
+
+        val mRequest = MultipartUploadRequest(this.reactApplicationContext, url!!)
+        val partsLength = parts?.size()
+
+        for (i in 0 until partsLength!!) {
+          val currentPart = parts?.getMap(i)
+          mRequest.addFileToUpload(currentPart?.getString("path")!!, currentPart?.getString("field")!!)
         }
-        MultipartUploadRequest(this.reactApplicationContext, url!!)
-                .addFileToUpload(filePath!!, options.getString("field")!!)
+        mRequest
       } else {
         JSONUploadRequest(this.reactApplicationContext, url!!)
       }
+
       request.setMethod(method!!)
               .setMaxRetries(maxRetries)
       if (notification.getBoolean("enabled")) {
