@@ -97,10 +97,12 @@ const App: () => React$Node = () => {
         Upload.getFileInfo(finalPath).then(metadata => {
           const uploadOpts = Object.assign(
             {
-              parts: [{ 
-                path: finalPath, 
-                field: "uploaded_media" 
-              }],
+              parts: [
+                {
+                  path: finalPath,
+                  field: 'uploaded_media',
+                },
+              ],
               method: 'POST',
               headers: {
                 'content-type': metadata.mimeType, // server requires a content-type header
