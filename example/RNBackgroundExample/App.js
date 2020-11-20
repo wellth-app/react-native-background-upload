@@ -99,7 +99,7 @@ const App: () => React$Node = () => {
             {
               parts: [{ 
                 path: finalPath, 
-                field: "uploaded-media" 
+                field: "uploaded_media" 
               }],
               method: 'POST',
               headers: {
