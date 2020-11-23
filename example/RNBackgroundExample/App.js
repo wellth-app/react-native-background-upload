@@ -251,6 +251,16 @@ const App: () => React$Node = () => {
                       Platform.OS === 'ios' ? 'localhost' : '10.0.2.2'
                     }:8080/upload_multipart`,
                     type: 'multipart',
+                    parameters: {
+                      operation: "someOperation",
+                      map: JSON.stringify([{ "0": "some.path.to.file" }]),
+                      object: JSON.stringify({ foo: "bar" }),
+                    },
+                    partsOrder: {
+                      "-10": "object",
+                      0: "operation",
+                      1: "map"
+                    }
                   })
                 }
               />

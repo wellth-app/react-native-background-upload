@@ -234,6 +234,7 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     NSDictionary *headers = options[@"headers"];
     NSDictionary *parameters = options[@"parameters"];
     __block NSArray *uploadParts = options[@"parts"];
+    __block NSDictionary *partsOrder = options[@"partsOrder"];
     
     @try {
         NSURL *requestUrl = [NSURL URLWithString: uploadUrl];
@@ -322,11 +323,42 @@ RCT_EXPORT_METHOD(cancelUpload:(NSString *)cancelUploadId resolve:(RCTPromiseRes
 
 - (NSData *)createBodyWithBoundary:(NSString *)boundary
                         parameters:(NSDictionary *)parameters
-                             parts:(NSArray *)parts {
+                             parts:(NSArray *)parts
+                             order:(NSDictionary *)partsOrder {
     NSMutableData *httpBody = [NSMutableData data];
+
+    // Ensure that `partsOrder` is sorted by keys
+    NSArray *sortedKeys = [[partsOrder allKeys] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+        if ([obj1 intValue] == [obj2 intValue]) {
+            return NSOrderedSame;
+        } else if ([obj1 intValue] < [obj2 intValue]) {
+            return NSOrderedAscending;
+        } else {
+            return NSOrderedDescending;
+        }
+    }];
     
-    // Put each parameter in it's own part, delimited by the boundary
+    // Create a dictionary sorted by keys
+    NSDictionary *sortedParts = [partsOrder dictionaryWithValuesForKeys:sortedKeys];
+    
+    // Add parts as dictated by `sortedParts` to the request body, tracking those parts in an array so they're
+    // not added again.
+    NSMutableArray *trackedParts = [NSMutableArray new];
+    [sortedParts enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
+        [trackedParts addObject:value];
+        NSString *parameter = [parameters objectForKey:value];
+        
+        [httpBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [httpBody appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", value] dataUsingEncoding:NSUTF8StringEncoding]];
+        [httpBody appendData:[[NSString stringWithFormat:@"%@\r\n", parameter] dataUsingEncoding:NSUTF8StringEncoding]];
+    }];
+    
+    // Put each parameter (that's not already tracked!) in it's own part, delimited by the boundary
     [parameters enumerateKeysAndObjectsUsingBlock:^(NSString *parameterKey, NSString *parameterValue, BOOL *stop) {
+        if ([trackedParts containsObject:parameterKey]) {
+            return;
+        }
+        
         [httpBody appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [httpBody appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n", parameterKey] dataUsingEncoding:NSUTF8StringEncoding]];
         [httpBody appendData:[[NSString stringWithFormat:@"%@\r\n", parameterValue] dataUsingEncoding:NSUTF8StringEncoding]];

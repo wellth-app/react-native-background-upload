@@ -248,13 +248,33 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
           return
         }
         val parameters = options.getMap("parameters")
+        val partsOrder = options.getMap("partsOrder")
+        val sortedParts: MutableMap<String, String> = TreeMap(partsOrder)
+        val trackedParts: MutableList<String> = mutableListOf<String>()
+        for ((key, value) in sortedParts.entries) {
+          trackedParts.add(value)
+
+          if (parameters.getType(value) != ReadableType.String) {
+            promise.reject(java.lang.IllegalArgumentException("Parameters must be string key/values. Value was invalid for '$key'"))
+            return
+          }
+
+          request.addParameter(value, parameters.getString(value)!!)
+        }
+
         val keys = parameters!!.keySetIterator()
         while (keys.hasNextKey()) {
           val key = keys.nextKey()
+
+          if (trackedParts.containsKey(key)) {
+            continue
+          }
+
           if (parameters.getType(key) != ReadableType.String) {
             promise.reject(java.lang.IllegalArgumentException("Parameters must be string key/values. Value was invalid for '$key'"))
             return
           }
+
           request.addParameter(key, parameters.getString(key)!!)
         }
       }
