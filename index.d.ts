@@ -97,6 +97,7 @@ declare module "react-native-background-upload" {
          */
         appGroup?: string;
         parts?: UploadParts[];
+        partsOrder?: { [key: number | string]: string };
     }
 
     export interface RawUploadOptions extends UploadOptions {
@@ -107,6 +108,7 @@ declare module "react-native-background-upload" {
     export interface MultipartUploadOptions extends UploadOptions {
         type: 'multipart';
         parts: UploadParts[];
+        partsOrder?: { [key: number | string]: string};
         parameters?: {
             [index: string]: string
         };
