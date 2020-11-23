@@ -263,7 +263,7 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
             [request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", uuidStr] forHTTPHeaderField:@"Content-Type"];
             
             // TODO: Modify this to take an array of parts
-            NSData *httpBody = [self createBodyWithBoundary:uuidStr parameters:parameters parts:normalizedParts];
+            NSData *httpBody = [self createBodyWithBoundary:uuidStr parameters:parameters parts:normalizedParts order:partsOrder];
             [request setHTTPBody: httpBody];
             
             uploadTask = [[self urlSession:appGroup] uploadTaskWithStreamedRequest:request];
