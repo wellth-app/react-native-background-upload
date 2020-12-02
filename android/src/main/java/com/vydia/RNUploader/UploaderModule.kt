@@ -22,6 +22,7 @@ import net.gotev.uploadservice.protocols.json.JSONUploadRequest
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
+import java.util.TreeMap
 
 class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
   private val TAG = "UploaderBridge"
@@ -249,35 +250,53 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
         }
         val parameters = options.getMap("parameters")
         val partsOrder = options.getMap("partsOrder")
-        val sortedParts: MutableMap<String, String> = TreeMap(partsOrder)
-        val trackedParts: MutableList<String> = mutableListOf<String>()
-        for ((key, value) in sortedParts.entries) {
-          trackedParts.add(value)
+        val sortedPartsOrder = TreeMap<String, String>()
+        val trackedParts = mutableListOf<String>()
 
-          if (parameters.getType(value) != ReadableType.String) {
-            promise.reject(java.lang.IllegalArgumentException("Parameters must be string key/values. Value was invalid for '$key'"))
+        // Assert that all value parts in the partsOrder map are strings (we
+        // can't assume this due to the nature of ReadableMap)
+        val partsOrderIterator = partsOrder!!.keySetIterator()
+        while (partsOrderIterator.hasNextKey()) {
+          val key = partsOrderIterator.nextKey()
+          if (partsOrder.getType(key) != ReadableType.String) {
+            promise.reject(java.lang.IllegalArgumentException("Parts order value for '$key' must be a string!"))
+            return
+          }
+
+          sortedPartsOrder.put(key, partsOrder.getString(key)!!)
+        }
+
+        // For each key in the sorted parts map, add it as a request parameter
+        // and then add it to tracked parts 
+        for ((key, value) in sortedPartsOrder) {
+          if (parameters!!.getType(value) != ReadableType.String) {
+            promise.reject(java.lang.IllegalArgumentException("Parameter value for '$key' must be a string!"))
             return
           }
 
           request.addParameter(value, parameters.getString(value)!!)
+          trackedParts.add(value)
         }
 
+        // Loop through all the parameter keys again to add any ones that may
+        // not have been included in the sorted parts map
         val keys = parameters!!.keySetIterator()
         while (keys.hasNextKey()) {
           val key = keys.nextKey()
 
-          if (trackedParts.containsKey(key)) {
+          if (trackedParts.contains(key)) {
             continue
           }
 
           if (parameters.getType(key) != ReadableType.String) {
-            promise.reject(java.lang.IllegalArgumentException("Parameters must be string key/values. Value was invalid for '$key'"))
+            promise.reject(java.lang.IllegalArgumentException("Parameter value for '$key' must be a string!"))
             return
           }
 
           request.addParameter(key, parameters.getString(key)!!)
         }
       }
+
       if (options.hasKey("headers")) {
         val headers = options.getMap("headers")
         val keys = headers!!.keySetIterator()
