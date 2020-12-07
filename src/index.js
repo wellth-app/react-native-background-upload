@@ -10,10 +10,12 @@ export type NotificationArgs = {
   enabled: boolean,
 };
 
-export type UploadParts = {
+export type UploadPart = {
   path: string,
   field: string,
 };
+
+export type UploadParts = UploadPart[];
 
 export type StartUploadArgs = {
   url: string,
@@ -25,7 +27,7 @@ export type StartUploadArgs = {
   parameters?: { [string]: string },
   headers?: Object,
   notification?: NotificationArgs,
-  parts?: UploadParts[],
+  parts?: UploadParts,
   partsOrder?: { [number | string]: string },
 };
 

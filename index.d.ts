@@ -76,10 +76,12 @@ declare module "react-native-background-upload" {
         onCancelledMessage: string
     }
 
-    export interface UploadParts {
+    export interface UploadPart {
         path: string;
         field: string;
     }
+
+    export type UploadParts = UploadPart[]
 
     export interface UploadOptions {
         url: string;
@@ -96,18 +98,18 @@ declare module "react-native-background-upload" {
          * in the context of ShareExtension.
          */
         appGroup?: string;
-        parts?: UploadParts[];
+        parts?: UploadParts;
         partsOrder?: { [key: number | string]: string };
     }
 
     export interface RawUploadOptions extends UploadOptions {
         type: 'raw';
-        parts: UploadParts[];
+        parts: UploadParts;
     }
 
     export interface MultipartUploadOptions extends UploadOptions {
         type: 'multipart';
-        parts: UploadParts[];
+        parts: UploadParts;
         partsOrder?: { [key: number | string]: string};
         parameters?: {
             [index: string]: string
