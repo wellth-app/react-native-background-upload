@@ -208,7 +208,15 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
 
         for (i in 0 until partsLength!!) {
           val currentPart = parts?.getMap(i)
-          mRequest.addFileToUpload(currentPart?.getString("path")!!, currentPart?.getString("field")!!)
+          val currentPartFieldType = currentPart?.getType("field")
+          val currentPartPath = currentPart?.getString("path")
+          val currentPartPathWithoutPrefix = currentPartPath?.removePrefix("file://")
+
+          if (currentPartFieldType != ReadableType.String) {
+            promise.reject(java.lang.IllegalArgumentException("The type for argument 'field' must be a string!"))
+          }
+
+          mRequest.addFileToUpload(currentPartPathWithoutPrefix!!, currentPart?.getString("field")!!)
         }
         mRequest
       } else {
