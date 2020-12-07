@@ -97,7 +97,12 @@ const App: () => React$Node = () => {
         Upload.getFileInfo(finalPath).then(metadata => {
           const uploadOpts = Object.assign(
             {
-              path: finalPath,
+              parts: [
+                {
+                  path: finalPath,
+                  field: 'uploaded_media',
+                },
+              ],
               method: 'POST',
               headers: {
                 'content-type': metadata.mimeType, // server requires a content-type header
@@ -245,8 +250,17 @@ const App: () => React$Node = () => {
                     url: `http://${
                       Platform.OS === 'ios' ? 'localhost' : '10.0.2.2'
                     }:8080/upload_multipart`,
-                    field: 'uploaded_media',
                     type: 'multipart',
+                    parameters: {
+                      operation: "someOperation",
+                      map: JSON.stringify([{ "0": "some.path.to.file" }]),
+                      object: JSON.stringify({ foo: "bar" }),
+                    },
+                    partsOrder: {
+                      "-10": "object",
+                      0: "operation",
+                      1: "map"
+                    }
                   })
                 }
               />
