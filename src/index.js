@@ -29,6 +29,7 @@ export type StartUploadArgs = {
   notification?: NotificationArgs,
   parts?: UploadParts,
   partsOrder?: { [number | string]: string },
+  context?: string,
 };
 
 const NativeModule =

@@ -175,8 +175,13 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
 
     createNotificationChannel()
 
-    initialize(application, notificationChannelID, BuildConfig.DEBUG)
-
+    if (options.hasKey("context")) {
+      var packageName = options.getString("context")!!
+      initialize(packageName, notificationChannelID, BuildConfig.DEBUG)
+    } else {
+      initialize(application, notificationChannelID, BuildConfig.DEBUG)
+    }
+    
     if(!isGlobalRequestObserver) {
       isGlobalRequestObserver = true
       GlobalRequestObserver(application, GlobalRequestObserverDelegate(reactContext))
