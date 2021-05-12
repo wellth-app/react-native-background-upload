@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import java.util.TreeMap
 
 class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
+  private val DEFAULT_PACKAGE = "com.wellthapp.reactnative"
   private val TAG = "UploaderBridge"
   private var notificationChannelID = "BackgroundUploadChannel"
   private var isGlobalRequestObserver = false
@@ -179,7 +180,7 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
       var packageName = options.getString("context")!!
       initialize(packageName, notificationChannelID, BuildConfig.DEBUG)
     } else {
-      initialize(application, notificationChannelID, BuildConfig.DEBUG)
+      initialize(DEFAULT_PACKAGE, notificationChannelID, BuildConfig.DEBUG)
     }
     
     if(!isGlobalRequestObserver) {
