@@ -178,7 +178,11 @@ class UploaderModule(val reactContext: ReactApplicationContext) : ReactContextBa
 
     if (options.hasKey("context")) {
       var packageName = options.getString("context")!!
-      initialize(packageName, notificationChannelID, BuildConfig.DEBUG)
+      if (packageName != null) {
+        initialize(packageName, notificationChannelID, BuildConfig.DEBUG)
+      } else {
+        initialize(DEFAULT_PACKAGE, notificationChannelID, BuildConfig.DEBUG)
+      }
     } else {
       initialize(DEFAULT_PACKAGE, notificationChannelID, BuildConfig.DEBUG)
     }
