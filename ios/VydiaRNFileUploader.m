@@ -105,7 +105,10 @@ NSURLSession *_urlSession = nil;
 RCT_EXPORT_METHOD(getFileInfo:(NSString *)path resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
     @try {
-        NSURL *fileUri = [NSURL URLWithString: path];
+        // Escape non latin characters in filename
+        NSString *escapedPath = [path stringByAddingPercentEncodingWithAllowedCharacters: NSCharacterSet.URLQueryAllowedCharacterSet];
+       
+        NSURL *fileUri = [NSURL URLWithString:escapedPath];
         NSString *pathWithoutProtocol = [fileUri path];
         NSString *name = [fileUri lastPathComponent];
         NSString *extension = [name pathExtension];
@@ -138,7 +141,11 @@ RCT_EXPORT_METHOD(getFileInfo:(NSString *)path resolve:(RCTPromiseResolveBlock)r
 - (NSString *)guessMIMETypeFromFileName: (NSString *)fileName {
     CFStringRef UTI = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (__bridge CFStringRef)[fileName pathExtension], NULL);
     CFStringRef MIMEType = UTTypeCopyPreferredTagWithClass(UTI, kUTTagClassMIMEType);
-    CFRelease(UTI);
+    
+    if (UTI) {
+        CFRelease(UTI);
+    }
+  
     if (!MIMEType) {
         return @"application/octet-stream";
     }
@@ -227,8 +234,10 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     }
     
     NSString *uploadUrl = options[@"url"];
+    __block NSString *fileURI = options[@"path"];
     NSString *method = options[@"method"] ?: @"POST";
     NSString *uploadType = options[@"type"] ?: @"raw";
+    NSString *fieldName = options[@"field"];
     NSString *customUploadId = options[@"customUploadId"];
     NSString *appGroup = options[@"appGroup"];
     NSDictionary *headers = options[@"headers"];
@@ -253,7 +262,24 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
                 [request setValue:val forHTTPHeaderField:key];
             }
         }];
-        
+
+
+        // asset library files have to be copied over to a temp file.  they can't be uploaded directly
+        if ([fileURI hasPrefix:@"assets-library"]) {
+            dispatch_group_t group = dispatch_group_create();
+            dispatch_group_enter(group);
+            [self copyAssetToFile:fileURI completionHandler:^(NSString * _Nullable tempFileUrl, NSError * _Nullable error) {
+                if (error) {
+                    dispatch_group_leave(group);
+                    reject(@"RN Uploader", @"Asset could not be copied to temp file.", nil);
+                    return;
+                }
+                fileURI = tempFileUrl;
+                dispatch_group_leave(group);
+            }];
+            dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+        }
+
         NSURLSessionDataTask *uploadTask;
         
         if ([uploadType isEqualToString:@"multipart"]) {
@@ -309,7 +335,7 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
  * Accepts upload ID as a first argument, this upload will be cancelled
  * Event "cancelled" will be fired when upload is cancelled.
  */
-RCT_EXPORT_METHOD(cancelUpload:(NSString *)cancelUploadId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
+RCT_EXPORT_METHOD(cancelUpload: (NSString *)cancelUploadId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject) {
     [_urlSession getTasksWithCompletionHandler:^(NSArray *dataTasks, NSArray *uploadTasks, NSArray *downloadTasks) {
         for (NSURLSessionTask *uploadTask in uploadTasks) {
             if ([uploadTask.taskDescription isEqualToString:cancelUploadId]){
@@ -326,6 +352,22 @@ RCT_EXPORT_METHOD(cancelUpload:(NSString *)cancelUploadId resolve:(RCTPromiseRes
                              parts:(NSArray *)parts
                              order:(NSDictionary *)partsOrder {
     NSMutableData *httpBody = [NSMutableData data];
+
+    // Escape non latin characters in filename
+    NSString *escapedPath = [path stringByAddingPercentEncodingWithAllowedCharacters: NSCharacterSet.URLQueryAllowedCharacterSet];
+
+    // resolve path
+    NSURL *fileUri = [NSURL URLWithString: escapedPath];
+    
+    NSError* error = nil;
+    NSData *data = [NSData dataWithContentsOfURL:fileUri options:NSDataReadingMappedAlways error: &error];
+
+    if (data == nil) {
+        NSLog(@"Failed to read file %@", error);
+    }
+
+    NSString *filename  = [path lastPathComponent];
+    NSString *mimetype  = [self guessMIMETypeFromFileName:path];
 
     // Ensure that `partsOrder` is sorted by keys
     NSArray *sortedKeys = [[partsOrder allKeys] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
@@ -460,6 +502,17 @@ totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend {
         _responsesData[@(dataTask.taskIdentifier)] = responseData;
     } else {
         [responseData appendData:data];
+    }
+}
+
+- (void)URLSession:(NSURLSession *)session
+              task:(NSURLSessionTask *)task
+ needNewBodyStream:(void (^)(NSInputStream *bodyStream))completionHandler {
+
+    NSInputStream *inputStream = task.originalRequest.HTTPBodyStream;
+
+    if (completionHandler) {
+        completionHandler(inputStream);
     }
 }
 

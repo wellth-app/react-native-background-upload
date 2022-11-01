@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        kotlinVersion = '1.4.0'
+        kotlinVersion = '1.6.0'
         buildToolsVersion = '29.0.2'
         compileSdkVersion = 29
         targetSdkVersion = 29
@@ -9,7 +9,7 @@ buildscript {
     ext.detoxKotlinVersion = ext.kotlinVersion
 
     repositories {
-        jcenter()
+        mavenCentral()
         google()
     }
     dependencies {
@@ -61,8 +61,12 @@ def _kotlinStdlib = _ext.has('detoxKotlinStdlib') ? _ext.detoxKotlinStdlib : 'ko
 
 dependencies {
     implementation "androidx.core:core-ktx:1.0.1"
+
     implementation 'com.facebook.react:react-native:+'
+
     implementation "org.jetbrains.kotlin:$_kotlinStdlib:$_kotlinVersion"
-    implementation 'com.github.wellth-app:android-upload-service:4.5.0-0'
+
+    implementation 'net.gotev:uploadservice-okhttp:4.7.0'
+
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
 }

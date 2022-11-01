@@ -1,4 +1,5 @@
 declare module "react-native-background-upload" {
+    import type { EventSubscription } from 'react-native';
 
     export interface EventData {
         id: string;
@@ -85,7 +86,8 @@ declare module "react-native-background-upload" {
 
     export interface UploadOptions {
         url: string;
-        type?: 'raw' | 'multipart' | 'json';
+        path: string;
+        type?: 'raw' | 'multipart''|'json';
         method?: 'POST' | 'GET' | 'PUT' | 'PATCH' | 'DELETE';
         customUploadId?: string;
         headers?: {
@@ -100,6 +102,7 @@ declare module "react-native-background-upload" {
         appGroup?: string;
         parts?: UploadParts;
         partsOrder?: { [key: number | string]: string };
+    field?: strig;
     }
 
     export interface RawUploadOptions extends UploadOptions {
@@ -111,6 +114,7 @@ declare module "react-native-background-upload" {
         type: 'multipart';
         parts: UploadParts;
         partsOrder?: { [key: number | string]: string};
+    field: string;
         parameters?: {
             [index: string]: string
         };
@@ -123,10 +127,10 @@ declare module "react-native-background-upload" {
 
     export default class Upload {
         static startUpload(options: UploadOptions | MultipartUploadOptions | RawUploadOptions): Promise<uploadId>
-        static addListener(event: 'progress', uploadId: uploadId, callback: (data: ProgressData ) => void): void
-        static addListener(event: 'error', uploadId: uploadId, callback: (data: ErrorData) => void): void
-        static addListener(event: 'completed', uploadId: uploadId, callback: (data: CompletedData) => void): void
-        static addListener(event: 'cancelled', uploadId: uploadId, callback: (data: EventData) => void): void
+        static addListener(event: 'progress', uploadId: uploadId | null, callback: (data: ProgressData ) => void): EventSubscription
+        static addListener(event: 'error', uploadId: uploadId | null, callback: (data: ErrorData) => void): EventSubscription
+        static addListener(event: 'completed', uploadId: uploadId | null, callback: (data: CompletedData) => void): EventSubscription
+        static addListener(event: 'cancelled', uploadId: uploadId | null, callback: (data: EventData) => void): EventSubscription
         static getFileInfo(path: string): Promise<FileInfo>
         static cancelUpload(uploadId: uploadId): Promise<boolean>
     }

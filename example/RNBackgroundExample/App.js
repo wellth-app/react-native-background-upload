@@ -150,7 +150,8 @@ const App: () => React$Node = () => {
       <SafeAreaView testID="main_screen">
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
+          style={styles.scrollView}
+        >
           <Header />
           {global.HermesInternal == null ? null : (
             <View style={styles.engine}>
@@ -187,7 +188,8 @@ const App: () => React$Node = () => {
                     .catch(err => {
                       console.warn(err.message);
                     });
-                }}>
+                }}
+              >
                 <Text>10 Sec Delay Success</Text>
               </TouchableOpacity>
 
@@ -233,7 +235,8 @@ const App: () => React$Node = () => {
                     .catch(err => {
                       console.warn(err.message);
                     });
-                }}>
+                }}
+              >
                 <Text>5 Sec Delay Error</Text>
               </TouchableOpacity>
 
