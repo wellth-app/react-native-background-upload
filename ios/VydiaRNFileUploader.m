@@ -234,7 +234,6 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
     }
     
     NSString *uploadUrl = options[@"url"];
-    __block NSString *fileURI = options[@"path"];
     NSString *method = options[@"method"] ?: @"POST";
     NSString *uploadType = options[@"type"] ?: @"raw";
     NSString *fieldName = options[@"field"];
@@ -262,23 +261,6 @@ RCT_EXPORT_METHOD(startUpload:(NSDictionary *)options resolve:(RCTPromiseResolve
                 [request setValue:val forHTTPHeaderField:key];
             }
         }];
-
-
-        // asset library files have to be copied over to a temp file.  they can't be uploaded directly
-        if ([fileURI hasPrefix:@"assets-library"]) {
-            dispatch_group_t group = dispatch_group_create();
-            dispatch_group_enter(group);
-            [self copyAssetToFile:fileURI completionHandler:^(NSString * _Nullable tempFileUrl, NSError * _Nullable error) {
-                if (error) {
-                    dispatch_group_leave(group);
-                    reject(@"RN Uploader", @"Asset could not be copied to temp file.", nil);
-                    return;
-                }
-                fileURI = tempFileUrl;
-                dispatch_group_leave(group);
-            }];
-            dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-        }
 
         NSURLSessionDataTask *uploadTask;
         
@@ -352,23 +334,7 @@ RCT_EXPORT_METHOD(cancelUpload: (NSString *)cancelUploadId resolve:(RCTPromiseRe
                              parts:(NSArray *)parts
                              order:(NSDictionary *)partsOrder {
     NSMutableData *httpBody = [NSMutableData data];
-
-    // Escape non latin characters in filename
-    NSString *escapedPath = [path stringByAddingPercentEncodingWithAllowedCharacters: NSCharacterSet.URLQueryAllowedCharacterSet];
-
-    // resolve path
-    NSURL *fileUri = [NSURL URLWithString: escapedPath];
     
-    NSError* error = nil;
-    NSData *data = [NSData dataWithContentsOfURL:fileUri options:NSDataReadingMappedAlways error: &error];
-
-    if (data == nil) {
-        NSLog(@"Failed to read file %@", error);
-    }
-
-    NSString *filename  = [path lastPathComponent];
-    NSString *mimetype  = [self guessMIMETypeFromFileName:path];
-
     // Ensure that `partsOrder` is sorted by keys
     NSArray *sortedKeys = [[partsOrder allKeys] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
         if ([obj1 intValue] == [obj2 intValue]) {
