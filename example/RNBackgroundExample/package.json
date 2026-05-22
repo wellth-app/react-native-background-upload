@@ -45,7 +45,7 @@
   },
   "resolutions": {
     "@hapi/hoek": "8.5.1",
-    "brace-expansion": "1.1.12",
+    "brace-expansion": "1.1.13",
     "cookie": "0.7.0",
     "debug": "4.3.1",
     "express": "4.20.0",
