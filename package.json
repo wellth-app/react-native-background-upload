@@ -50,7 +50,8 @@
     "ip": "1.1.9",
     "node-fetch": "2.6.1",
     "npm-user-validate": "1.0.1",
-    "qs": "6.14.2"
+    "qs": "6.14.2",
+    "tmp": "0.2.4"
   },
   "release": {
     "plugins": [
