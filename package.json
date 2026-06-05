@@ -44,10 +44,14 @@
     "semantic-release": "^15.13.31"
   },
   "resolutions": {
+    "@babel/traverse": "7.23.2",
     "brace-expansion": "1.1.13",
     "debug": "4.3.1",
+    "form-data": "2.5.5",
     "handlebars": "4.7.9",
     "ip": "1.1.9",
+    "json-schema": "0.4.0",
+    "minimist": "1.2.6",
     "node-fetch": "2.6.1",
     "npm-user-validate": "1.0.1",
     "qs": "6.14.2",
